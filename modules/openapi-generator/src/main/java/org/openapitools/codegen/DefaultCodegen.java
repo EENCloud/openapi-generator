@@ -295,6 +295,8 @@ public class DefaultCodegen implements CodegenConfig {
     protected boolean enumUnknownDefaultCase = false;
     protected String enumUnknownDefaultCaseName = "unknown_default_open_api";
 
+    protected boolean enumAsString = false;
+
     // make openapi available to all methods
     protected OpenAPI openAPI;
 
@@ -3932,7 +3934,7 @@ public class DefaultCodegen implements CodegenConfig {
         property.baseType = getSchemaType(p);
 
         // this can cause issues for clients which don't support enums
-        if (property.isEnum) {
+        if (property.isEnum && !enumAsString) {
             property.datatypeWithEnum = toEnumName(property);
             property.enumName = toEnumName(property);
         } else {
