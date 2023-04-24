@@ -457,7 +457,7 @@ public class DefaultGenerator implements Generator {
         for (String name : modelKeys) {
             try {
                 //don't generate models that have an import mapping
-                if (config.schemaMapping().containsKey(name)) {
+                if (config.importMapping().containsKey(name)) {
                     LOGGER.debug("Model {} not imported due to import mapping", name);
 
                     for (String templateName : config.modelTemplateFiles().keySet()) {
