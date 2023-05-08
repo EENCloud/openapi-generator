@@ -98,6 +98,7 @@ public class SpringCodegen extends AbstractJavaCodegen
     public static final String VIRTUAL_SERVICE = "virtualService";
     public static final String SKIP_DEFAULT_INTERFACE = "skipDefaultInterface";
     public static final String GENERATE_CONSTRUCTOR_WITH_REQUIRED_ARGS = "generatedConstructorWithRequiredArgs";
+    public static final String ENUM_AS_STRING = "enumAsString";
 
     public static final String ASYNC = "async";
     public static final String REACTIVE = "reactive";
@@ -260,6 +261,9 @@ public class SpringCodegen extends AbstractJavaCodegen
         cliOptions.add(CliOption.newBoolean(GENERATE_CONSTRUCTOR_WITH_REQUIRED_ARGS,
             "Whether to generate constructors with required args for models",
             generatedConstructorWithRequiredArgs));
+        cliOptions.add(CliOption.newBoolean(ENUM_AS_STRING,
+            "Whether to threat enums as strings",
+            enumAsString));
 
         supportedLibraries.put(SPRING_BOOT, "Spring-boot Server application.");
         supportedLibraries.put(SPRING_CLOUD_LIBRARY,
@@ -473,6 +477,11 @@ public class SpringCodegen extends AbstractJavaCodegen
             this.generatedConstructorWithRequiredArgs = convertPropertyToBoolean(GENERATE_CONSTRUCTOR_WITH_REQUIRED_ARGS);
         }
         writePropertyBack(GENERATE_CONSTRUCTOR_WITH_REQUIRED_ARGS, generatedConstructorWithRequiredArgs);
+
+        if (additionalProperties.containsKey(ENUM_AS_STRING)) {
+            this.enumAsString = convertPropertyToBoolean(ENUM_AS_STRING);
+        }
+        writePropertyBack(ENUM_AS_STRING, enumAsString);
 
         if (additionalProperties.containsKey(RETURN_SUCCESS_CODE)) {
             this.setReturnSuccessCode(Boolean.parseBoolean(additionalProperties.get(RETURN_SUCCESS_CODE).toString()));
