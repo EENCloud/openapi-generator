@@ -72,6 +72,7 @@ public class SpringCodegen extends AbstractJavaCodegen
     public static final String VIRTUAL_SERVICE = "virtualService";
     public static final String SKIP_DEFAULT_INTERFACE = "skipDefaultInterface";
     public static final String GENERATE_CONSTRUCTOR_WITH_REQUIRED_ARGS = "generatedConstructorWithRequiredArgs";
+    public static final String ENUM_AS_STRING = "enumAsString";
 
     public static final String RESOURCE_FOLDER = "resourceFolder";
     public static final String RESOURCE_FOLDER_DESC = "resource folder for generated resources";
@@ -263,8 +264,12 @@ public class SpringCodegen extends AbstractJavaCodegen
                 "Generate code and provide dependencies for use with Spring Boot 3.x. (Use jakarta instead of javax in imports). Enabling this option will also enable `useJakartaEe`.",
                 useSpringBoot3));
         cliOptions.add(CliOption.newBoolean(GENERATE_CONSTRUCTOR_WITH_REQUIRED_ARGS,
-                "Whether to generate constructors with required args for models",
-                generatedConstructorWithRequiredArgs));
+            "Whether to generate constructors with required args for models",
+            generatedConstructorWithRequiredArgs));
+
+        cliOptions.add(CliOption.newBoolean(ENUM_AS_STRING,
+            "Whether to threat enums as strings",
+            enumAsString));
         cliOptions.add(new CliOption(RESOURCE_FOLDER, RESOURCE_FOLDER_DESC).defaultValue(this.getResourceFolder()));
         cliOptions.add(CliOption.newBoolean(OPTIONAL_ACCEPT_NULLABLE,
                 "Use `ofNullable` instead of just `of` to accept null values when using Optional.",
@@ -427,6 +432,24 @@ public class SpringCodegen extends AbstractJavaCodegen
         convertPropertyToBooleanAndWriteBack(RETURN_SUCCESS_CODE, this::setReturnSuccessCode);
         convertPropertyToBooleanAndWriteBack(USE_SWAGGER_UI, this::setUseSwaggerUI);
         convertPropertyToBooleanAndWriteBack(USE_SEALED, this::setUseSealed);
+        if (additionalProperties.containsKey(GENERATE_CONSTRUCTOR_WITH_REQUIRED_ARGS)) {
+            this.generatedConstructorWithRequiredArgs = convertPropertyToBoolean(GENERATE_CONSTRUCTOR_WITH_REQUIRED_ARGS);
+        }
+        writePropertyBack(GENERATE_CONSTRUCTOR_WITH_REQUIRED_ARGS, generatedConstructorWithRequiredArgs);
+
+        if (additionalProperties.containsKey(ENUM_AS_STRING)) {
+            this.enumAsString = convertPropertyToBoolean(ENUM_AS_STRING);
+        }
+        writePropertyBack(ENUM_AS_STRING, enumAsString);
+
+        if (additionalProperties.containsKey(RETURN_SUCCESS_CODE)) {
+            this.setReturnSuccessCode(Boolean.parseBoolean(additionalProperties.get(RETURN_SUCCESS_CODE).toString()));
+        }
+
+        if (additionalProperties.containsKey(USE_SWAGGER_UI)) {
+            this.setUseSwaggerUI(convertPropertyToBoolean(USE_SWAGGER_UI));
+        }
+
         if (getDocumentationProvider().equals(DocumentationProvider.NONE)) {
             this.setUseSwaggerUI(false);
         }
