@@ -98,7 +98,7 @@ public class DefaultGenerator implements Generator {
     private Map<String, String> generatorPropertyDefaults = new HashMap<>();
     /**
      *  Retrieves an instance to the configured template processor, available after user-defined options are
-     *  applied via 
+     *  applied via
      */
     @Getter protected TemplateProcessor templateProcessor = null;
 
@@ -477,8 +477,15 @@ public class DefaultGenerator implements Generator {
             processedModels.add(name);
             try {
                 //don't generate models that have an import mapping
-                if (config.schemaMapping().containsKey(name)) {
-                    LOGGER.info("Model {} not generated due to schema mapping", name);
+                if (config.importMapping().containsKey(name)) {
+                    LOGGER.debug("Model {} not imported due to import mapping", name);
+
+                    for (String templateName : config.modelTemplateFiles().keySet()) {
+                        // HACK: Because this returns early, could lead to some invalid model reporting.
+                        String filename = config.modelFilename(templateName, name);
+                        Path path = java.nio.file.Paths.get(filename);
+                        this.templateProcessor.skip(path,"Skipped prior to model processing due to schema mapping." );
+                    }
                     continue;
                 }
 
@@ -552,7 +559,7 @@ public class DefaultGenerator implements Generator {
                 }
             }
         }
-        
+
         // generate files based on processed models
         for (String modelName : allProcessedModels.keySet()) {
             ModelsMap models = allProcessedModels.get(modelName);
@@ -1619,7 +1626,7 @@ public class DefaultGenerator implements Generator {
     }
 
     private static String generateParameterId(Parameter parameter) {
-        return null == parameter.get$ref() ? parameter.getName() + ":" + parameter.getIn() : parameter.get$ref() ;    
+        return null == parameter.get$ref() ? parameter.getName() + ":" + parameter.getIn() : parameter.get$ref() ;
     }
 
     private OperationsMap processOperations(CodegenConfig config, String tag, List<CodegenOperation> ops, List<ModelMap> allModels) {
