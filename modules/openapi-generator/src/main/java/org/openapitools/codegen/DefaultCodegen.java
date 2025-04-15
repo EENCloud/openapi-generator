@@ -70,10 +70,10 @@ import org.openapitools.codegen.utils.OneOfImplementorAdditionalData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.io.BufferedReader;
-import java.io.InputStreamReader;
+import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.Map.Entry;
@@ -352,7 +352,6 @@ public class DefaultCodegen implements CodegenConfig {
      * first from additionalProperties
      * then from the getter in this instance
      * then from the fields in this instance
-     *
      */
     protected void useCodegenAsMustacheParentContext() {
         additionalProperties.put(CodegenConstants.MUSTACHE_PARENT_CONTEXT, this);
@@ -394,7 +393,7 @@ public class DefaultCodegen implements CodegenConfig {
         convertPropertyToBooleanAndWriteBack(CodegenConstants.DISALLOW_ADDITIONAL_PROPERTIES_IF_NOT_PRESENT, this::setDisallowAdditionalPropertiesIfNotPresent);
         convertPropertyToBooleanAndWriteBack(CodegenConstants.ENUM_UNKNOWN_DEFAULT_CASE, this::setEnumUnknownDefaultCase);
         convertPropertyToBooleanAndWriteBack(CodegenConstants.AUTOSET_CONSTANTS, this::setAutosetConstants);
-        }
+    }
 
 
     /***
@@ -548,6 +547,7 @@ public class DefaultCodegen implements CodegenConfig {
      * This usually occurs when the data type is different.
      * We can also consider discriminators as new because the derived class discriminator will have to be defined again
      * to contain a new value. Doing so prevents having to include the discriminator in the constructor.
+     *
      * @param model
      * @param property
      * @return
@@ -555,9 +555,9 @@ public class DefaultCodegen implements CodegenConfig {
     private boolean codegenPropertyIsNew(CodegenModel model, CodegenProperty property) {
         return model.parentModel == null
                 ? false
-                : model.parentModel.allVars.stream().anyMatch(p -> 
-                    p.name.equals(property.name) &&
-                    (p.dataType.equals(property.dataType) == false || p.datatypeWithEnum.equals(property.datatypeWithEnum) == false));
+                : model.parentModel.allVars.stream().anyMatch(p ->
+                p.name.equals(property.name) &&
+                        (p.dataType.equals(property.dataType) == false || p.datatypeWithEnum.equals(property.datatypeWithEnum) == false));
     }
 
     /**
@@ -876,8 +876,8 @@ public class DefaultCodegen implements CodegenConfig {
     /**
      * Return the enum default value in the language specified format
      *
-     * @param property  The codegen property to create the default for.
-     * @param value     Enum variable name
+     * @param property The codegen property to create the default for.
+     * @param value    Enum variable name
      * @return the default value for the enum
      */
     public String toEnumDefaultValue(CodegenProperty property, String value) {
@@ -1135,6 +1135,7 @@ public class DefaultCodegen implements CodegenConfig {
 
     /**
      * This method escapes text to be used in a single quoted string
+     *
      * @param input the input string
      * @return the escaped string
      */
@@ -3277,7 +3278,7 @@ public class DefaultCodegen implements CodegenConfig {
         }
 
         if (refSchema.getProperties() != null && refSchema.getProperties().get(discPropName) != null) {
-            Schema discSchema = ModelUtils.getReferencedSchema(openAPI, (Schema)refSchema.getProperties().get(discPropName));
+            Schema discSchema = ModelUtils.getReferencedSchema(openAPI, (Schema) refSchema.getProperties().get(discPropName));
             CodegenProperty cp = new CodegenProperty();
             if (ModelUtils.isStringSchema(discSchema)) {
                 cp.isString = true;
@@ -5658,6 +5659,7 @@ public class DefaultCodegen implements CodegenConfig {
      */
     protected String getOrGenerateOperationId(Operation operation, String path, String httpMethod) {
         String operationId = operation.getOperationId();
+
         if (StringUtils.isBlank(operationId)) {
             String tmpPath = path;
             tmpPath = tmpPath.replaceAll("\\{", "");
@@ -5682,6 +5684,10 @@ public class DefaultCodegen implements CodegenConfig {
             LOGGER.warn("Empty operationId found for path: {} {}. Renamed to auto-generated operationId: {}", httpMethod, path, operationId);
         }
 
+        if (operationIdNameMapping.containsKey(operationId)) {
+            return operationIdNameMapping.get(operationId);
+        }
+
         // remove prefix in operationId
         if (removeOperationIdPrefix) {
             // The prefix is everything before the removeOperationIdPrefixCount occurrence of removeOperationIdPrefixDelimiter
@@ -5694,13 +5700,8 @@ public class DefaultCodegen implements CodegenConfig {
                 operationId = String.join(removeOperationIdPrefixDelimiter, Arrays.copyOfRange(components, component_number, components.length));
             }
         }
-        operationId = removeNonNameElementToCamelCase(operationId);
 
-        if (operationIdNameMapping.containsKey(operationId)) {
-            return operationIdNameMapping.get(operationId);
-        } else {
-            return toOperationId(operationId);
-        }
+        return toOperationId(removeNonNameElementToCamelCase(operationId));
     }
 
     /**
@@ -6906,7 +6907,7 @@ public class DefaultCodegen implements CodegenConfig {
      * writes it back to additionalProperties to be usable as a boolean in
      * mustache files.
      *
-     * @param propertyKey property key
+     * @param propertyKey   property key
      * @param booleanSetter the setter function reference
      * @return property value as boolean or false if it does not exist
      */
@@ -6925,7 +6926,7 @@ public class DefaultCodegen implements CodegenConfig {
      * writes it back to additionalProperties to be usable as a string in
      * mustache files.
      *
-     * @param propertyKey property key
+     * @param propertyKey  property key
      * @param stringSetter the setter function reference
      * @return property value as String or null if not found
      */
@@ -6938,7 +6939,7 @@ public class DefaultCodegen implements CodegenConfig {
      * writes it back to additionalProperties to be usable as T in
      * mustache files.
      *
-     * @param propertyKey property key
+     * @param propertyKey       property key
      * @param genericTypeSetter the setter function reference
      * @return property value as instance of type T or null if not found
      */
@@ -7198,7 +7199,7 @@ public class DefaultCodegen implements CodegenConfig {
         Schema original = null;
         // check if it's allOf (only 1 sub schema) with or without default/nullable/etc set in the top level
         if (ModelUtils.isAllOf(schema) && schema.getAllOf().size() == 1 &&
-                ModelUtils.getType(schema) == null) {
+                (ModelUtils.getType(schema) == null || "object".equals(ModelUtils.getType(schema)))) {
             if (schema.getAllOf().get(0) instanceof Schema) {
                 original = schema;
                 schema = (Schema) schema.getAllOf().get(0);
@@ -7851,7 +7852,7 @@ public class DefaultCodegen implements CodegenConfig {
         Schema original = null;
         // check if it's allOf (only 1 sub schema) with or without default/nullable/etc set in the top level
         if (ModelUtils.isAllOf(schema) && schema.getAllOf().size() == 1 &&
-                ModelUtils.getType(schema) == null) {
+                (ModelUtils.getType(schema) == null || "object".equals(ModelUtils.getType(schema)))) {
             if (schema.getAllOf().get(0) instanceof Schema) {
                 original = schema;
                 schema = (Schema) schema.getAllOf().get(0);
@@ -8239,7 +8240,7 @@ public class DefaultCodegen implements CodegenConfig {
             int exitValue = p.exitValue();
             if (exitValue != 0) {
                 try (InputStreamReader inputStreamReader = new InputStreamReader(p.getErrorStream(), StandardCharsets.UTF_8);
-                BufferedReader br = new BufferedReader(inputStreamReader)) {
+                     BufferedReader br = new BufferedReader(inputStreamReader)) {
                     StringBuilder sb = new StringBuilder();
                     String line;
                     while ((line = br.readLine()) != null) {
@@ -8393,7 +8394,8 @@ public class DefaultCodegen implements CodegenConfig {
 
     public void addImportsToOneOfInterface(List<Map<String, String>> imports) {
     }
-    //// End of methods related to the "useOneOfInterfaces" feature
+
+    /// / End of methods related to the "useOneOfInterfaces" feature
 
     protected void modifyFeatureSet(Consumer<FeatureSet.Builder> processor) {
         FeatureSet.Builder builder = getFeatureSet().modify();
@@ -8405,7 +8407,8 @@ public class DefaultCodegen implements CodegenConfig {
     /**
      * An map entry for cached sanitized names.
      */
-    @Getter private static class SanitizeNameOptions {
+    @Getter
+    private static class SanitizeNameOptions {
         public SanitizeNameOptions(String name, String removeCharRegEx, List<String> exceptions) {
             this.name = name;
             this.removeCharRegEx = removeCharRegEx;

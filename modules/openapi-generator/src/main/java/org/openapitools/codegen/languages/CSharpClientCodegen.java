@@ -18,8 +18,8 @@ package org.openapitools.codegen.languages;
 
 import com.google.common.collect.ImmutableMap;
 import com.samskivert.mustache.Mustache;
-import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.Operation;
+import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.servers.Server;
 import lombok.Getter;
 import lombok.Setter;
@@ -108,6 +108,7 @@ public class CSharpClientCodegen extends AbstractCSharpCodegen {
 
     protected boolean supportsRetry = Boolean.TRUE;
     protected boolean supportsAsync = Boolean.TRUE;
+    protected boolean useVirtualForHooks = Boolean.FALSE;
     protected boolean netStandard = Boolean.FALSE;
     protected boolean supportsFileParameters = Boolean.TRUE;
     protected boolean supportsDateOnly = Boolean.FALSE;
@@ -128,6 +129,7 @@ public class CSharpClientCodegen extends AbstractCSharpCodegen {
         ALPHABETICAL,
         LEGACY
     }
+
     private SortingMethod operationParameterSorting = SortingMethod.DEFAULT;
     private SortingMethod modelPropertySorting = SortingMethod.DEFAULT;
 
@@ -355,6 +357,10 @@ public class CSharpClientCodegen extends AbstractCSharpCodegen {
                 "Use source generation where available (only `generichost` library supports this option).",
                 this.getUseSourceGeneration());
 
+        addSwitch(CodegenConstants.USE_VIRTUAL_FOR_HOOKS,
+                CodegenConstants.USE_VIRTUAL_FOR_HOOKS_DESC,
+                this.useVirtualForHooks);
+
         supportedLibraries.put(GENERICHOST, "HttpClient, Generic Host integration, and System.Text.Json (https://docs.microsoft.com/en-us/dotnet/core/extensions/generic-host)");
         supportedLibraries.put(HTTPCLIENT, "HttpClient and Newtonsoft (https://docs.microsoft.com/en-us/dotnet/api/system.net.http.httpclient) "
                 + "(Experimental. Subject to breaking changes without notice.)");
@@ -504,8 +510,7 @@ public class CSharpClientCodegen extends AbstractCSharpCodegen {
                     Collections.sort(codegenModel.readOnlyVars, propertyComparatorByNotNullableRequiredNoDefaultLegacy);
                     Collections.sort(codegenModel.readWriteVars, propertyComparatorByNotNullableRequiredNoDefaultLegacy);
                     Collections.sort(codegenModel.parentVars, propertyComparatorByNotNullableRequiredNoDefaultLegacy);
-                }
-                else {
+                } else {
                     Collections.sort(codegenModel.vars, propertyComparatorByNotNullableRequiredNoDefault);
                     Collections.sort(codegenModel.allVars, propertyComparatorByNotNullableRequiredNoDefault);
                     Collections.sort(codegenModel.requiredVars, propertyComparatorByNotNullableRequiredNoDefault);
@@ -755,24 +760,24 @@ public class CSharpClientCodegen extends AbstractCSharpCodegen {
         }
 
         final Map<String, Runnable> libraryActions = Map.of(
-            GENERICHOST, () -> {
-                setLibrary(GENERICHOST);
-                additionalProperties.put("useGenericHost", true);
-            },
-            RESTSHARP, () -> {
-                additionalProperties.put("useRestSharp", true);
-                needsCustomHttpMethod = true;
-            },
-            HTTPCLIENT, () -> {
-                setLibrary(HTTPCLIENT);
-                additionalProperties.put("useHttpClient", true);
-                needsUriBuilder = true;
-            },
-            UNITY_WEB_REQUEST, () -> {
-                setLibrary(UNITY_WEB_REQUEST);
-                additionalProperties.put("useUnityWebRequest", true);
-                needsUriBuilder = true;
-            }
+                GENERICHOST, () -> {
+                    setLibrary(GENERICHOST);
+                    additionalProperties.put("useGenericHost", true);
+                },
+                RESTSHARP, () -> {
+                    additionalProperties.put("useRestSharp", true);
+                    needsCustomHttpMethod = true;
+                },
+                HTTPCLIENT, () -> {
+                    setLibrary(HTTPCLIENT);
+                    additionalProperties.put("useHttpClient", true);
+                    needsUriBuilder = true;
+                },
+                UNITY_WEB_REQUEST, () -> {
+                    setLibrary(UNITY_WEB_REQUEST);
+                    additionalProperties.put("useUnityWebRequest", true);
+                    needsUriBuilder = true;
+                }
         );
         final Runnable action = libraryActions.get(library);
         if (action != null) {
@@ -853,6 +858,7 @@ public class CSharpClientCodegen extends AbstractCSharpCodegen {
         syncBooleanProperty(additionalProperties, CodegenConstants.EQUATABLE, this::setEquatable, this.equatable);
         syncBooleanProperty(additionalProperties, CodegenConstants.VALIDATABLE, this::setValidatable, this.validatable);
         syncBooleanProperty(additionalProperties, CodegenConstants.SUPPORTS_ASYNC, this::setSupportsAsync, this.supportsAsync);
+        syncBooleanProperty(additionalProperties, CodegenConstants.USE_VIRTUAL_FOR_HOOKS, this::setUseVirtualForHooks, this.useVirtualForHooks);
         syncBooleanProperty(additionalProperties, SUPPORTS_RETRY, this::setSupportsRetry, this.supportsRetry);
         syncBooleanProperty(additionalProperties, CodegenConstants.OPTIONAL_METHOD_ARGUMENT, this::setOptionalMethodArgumentFlag, optionalMethodArgumentFlag);
         syncBooleanProperty(additionalProperties, CodegenConstants.NON_PUBLIC_API, this::setNonPublicApi, isNonPublicApi());
@@ -918,6 +924,7 @@ public class CSharpClientCodegen extends AbstractCSharpCodegen {
                 addSupportingFiles(clientPackageDir, packageFolder, excludeTests, testPackageFolder, testPackageName, modelPackageDir, authPackageDir);
                 supportingFiles.add(new SupportingFile("ConnectionException.mustache", clientPackageDir, "ConnectionException.cs"));
                 supportingFiles.add(new SupportingFile("UnexpectedResponseException.mustache", clientPackageDir, "UnexpectedResponseException.cs"));
+                supportingFiles.add(new SupportingFile("UnityWebRequestAwaiterExtension.mustache", clientPackageDir, "UnityWebRequestAwaiterExtension.cs"));
                 break;
             default: // generichost
                 addGenericHostSupportingFiles(clientPackageDir, packageFolder, excludeTests, testPackageFolder, testPackageName, modelPackageDir);
@@ -1014,7 +1021,7 @@ public class CSharpClientCodegen extends AbstractCSharpCodegen {
     public void addSupportingFiles(final String clientPackageDir, final String packageFolder,
                                    final AtomicReference<Boolean> excludeTests, final String testPackageFolder, final String testPackageName, final String modelPackageDir, final String authPackageDir) {
         final String library = getLibrary();
-        
+
         if (RESTSHARP.equals(library)) { // restsharp
             if (useIntForTimeout) { // option to fall back to int for Timeout using v7.9.0 template
                 supportingFiles.add(new SupportingFile("ApiClient.v790.mustache", clientPackageDir, "ApiClient.cs"));
@@ -1183,7 +1190,7 @@ public class CSharpClientCodegen extends AbstractCSharpCodegen {
     public void setOptionalProjectFileFlag(boolean flag) {
         this.optionalProjectFileFlag = flag;
     }
-    
+
     /**
      * Sets the api name. This value must be a valid class name.
      *
@@ -1214,6 +1221,10 @@ public class CSharpClientCodegen extends AbstractCSharpCodegen {
 
     public void setSupportsAsync(Boolean supportsAsync) {
         this.supportsAsync = supportsAsync;
+    }
+
+    public void setUseVirtualForHooks(Boolean useVirtualForHooks) {
+        this.useVirtualForHooks = useVirtualForHooks;
     }
 
     public void setSupportsFileParameters(Boolean supportsFileParameters) {
