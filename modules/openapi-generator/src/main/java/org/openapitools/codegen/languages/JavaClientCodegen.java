@@ -56,7 +56,7 @@ public class JavaClientCodegen extends AbstractJavaCodegen
     static final String MEDIA_TYPE = "mediaType";
 
     private final Logger LOGGER = LoggerFactory.getLogger(JavaClientCodegen.class);
-  
+
     public static final String USE_RX_JAVA2 = "useRxJava2";
     public static final String USE_RX_JAVA3 = "useRxJava3";
     public static final String DO_NOT_USE_RX = "doNotUseRx";
@@ -78,6 +78,7 @@ public class JavaClientCodegen extends AbstractJavaCodegen
     public static final String ERROR_OBJECT_TYPE = "errorObjectType";
 
     public static final String FEIGN = "feign";
+    public static final String FEIGN_HC5 = "feign-hc5";
     public static final String GOOGLE_API_CLIENT = "google-api-client";
     public static final String JERSEY2 = "jersey2";
     public static final String JERSEY3 = "jersey3";
@@ -137,7 +138,7 @@ public class JavaClientCodegen extends AbstractJavaCodegen
     @Getter @Setter protected boolean failOnUnknownProperties = false;
     protected String authFolder;
     /**
-     *  Serialization library.
+     * Serialization library.
      */
     @Getter protected String serializationLibrary = null;
     @Setter protected boolean useOneOfDiscriminatorLookup = false; // use oneOf discriminator's mapping for model lookup
@@ -238,7 +239,7 @@ public class JavaClientCodegen extends AbstractJavaCodegen
         cliOptions.add(CliOption.newString(MICROPROFILE_REST_CLIENT_VERSION, "Version of MicroProfile Rest Client API."));
         cliOptions.add(CliOption.newString(CodegenConstants.USE_SINGLE_REQUEST_PARAMETER, "Setting this property to \"true\" will generate functions with a single argument containing all API endpoint parameters instead of one argument per parameter. ONLY jersey2, jersey3, okhttp-gson, microprofile, Spring RestClient, Spring WebClient support this option. Setting this property to \"static\" does the same as \"true\", but also makes the generated arguments class static with single parameter instantiation.").defaultValue("false"));
         cliOptions.add(CliOption.newBoolean(WEBCLIENT_BLOCKING_OPERATIONS, "Making all WebClient operations blocking(sync). Note that if on operation 'x-webclient-blocking: false' then such operation won't be sync", this.webclientBlockingOperations));
-        cliOptions.add(CliOption.newBoolean(GENERATE_CLIENT_AS_BEAN, "For resttemplate, configure whether to create `ApiClient.java` and Apis clients as bean (with `@Component` annotation).", this.generateClientAsBean));
+        cliOptions.add(CliOption.newBoolean(GENERATE_CLIENT_AS_BEAN, "For resttemplate, restclient and webclient, configure whether to create `ApiClient.java` and Apis clients as bean (with `@Component` annotation).", this.generateClientAsBean));
         cliOptions.add(CliOption.newBoolean(SUPPORT_URL_QUERY, "Generate toUrlQueryString in POJO (default to true). Available on `native`, `apache-httpclient` libraries."));
         cliOptions.add(CliOption.newBoolean(USE_ENUM_CASE_INSENSITIVE, "Use `equalsIgnoreCase` when String for enum comparison", useEnumCaseInsensitive));
         cliOptions.add(CliOption.newBoolean(FAIL_ON_UNKNOWN_PROPERTIES, "Fail Jackson de-serialization on unknown properties", this.failOnUnknownProperties));
@@ -246,6 +247,7 @@ public class JavaClientCodegen extends AbstractJavaCodegen
         supportedLibraries.put(JERSEY2, "HTTP client: Jersey client 2.25.1. JSON processing: Jackson 2.17.1");
         supportedLibraries.put(JERSEY3, "HTTP client: Jersey client 3.1.1. JSON processing: Jackson 2.17.1");
         supportedLibraries.put(FEIGN, "HTTP client: OpenFeign 13.2.1. JSON processing: Jackson 2.17.1 or Gson 2.10.1");
+        supportedLibraries.put(FEIGN_HC5, "HTTP client: OpenFeign 13.2.1/HttpClient5 5.4.2. JSON processing: Jackson 2.17.1 or Gson 2.10.1");
         supportedLibraries.put(OKHTTP_GSON, "[DEFAULT] HTTP client: OkHttp 4.11.0. JSON processing: Gson 2.10.1. Enable Parcelable models on Android using '-DparcelableModel=true'. Enable gzip request encoding using '-DuseGzipFeature=true'.");
         supportedLibraries.put(RETROFIT_2, "HTTP client: OkHttp 4.11.0. JSON processing: Gson 2.10.1 (Retrofit 2.5.0) or Jackson 2.17.1. Enable the RxJava adapter using '-DuseRxJava[2/3]=true'. (RxJava 1.x or 2.x or 3.x)");
         supportedLibraries.put(RESTTEMPLATE, "HTTP client: Spring RestTemplate 5.3.33 (6.1.5 if `useJakartaEe=true`). JSON processing: Jackson 2.17.1");
@@ -325,7 +327,7 @@ public class JavaClientCodegen extends AbstractJavaCodegen
 
         // determine and cache client library type once
         final boolean libApache = isLibrary(APACHE);
-        final boolean libFeign = isLibrary(FEIGN);
+        final boolean libFeign = isLibrary(FEIGN) || isLibrary(FEIGN_HC5);
         final boolean libGoogleApiClient = isLibrary(GOOGLE_API_CLIENT);
         final boolean libJersey2 = isLibrary(JERSEY2);
         final boolean libJersey3 = isLibrary(JERSEY3);
@@ -351,7 +353,7 @@ public class JavaClientCodegen extends AbstractJavaCodegen
             LOGGER.warn("You specified all RxJava versions 2 and 3 but they are mutually exclusive. Defaulting to v3.");
             convertPropertyToBooleanAndWriteBack(USE_RX_JAVA3, this::setUseRxJava3);
             writePropertyBack(USE_RX_JAVA2, false);
-            } else {
+        } else {
             convertPropertyToBooleanAndWriteBack(USE_RX_JAVA3, this::setUseRxJava3);
             convertPropertyToBooleanAndWriteBack(USE_RX_JAVA2, this::setUseRxJava2);
         }
@@ -377,16 +379,16 @@ public class JavaClientCodegen extends AbstractJavaCodegen
 
         convertPropertyToBooleanAndWriteBack(MICROPROFILE_MUTINY, this::setMicroprofileMutiny);
 
-        convertPropertyToStringAndWriteBack(MICROPROFILE_REST_CLIENT_VERSION, value->microprofileRestClientVersion=value);
+        convertPropertyToStringAndWriteBack(MICROPROFILE_REST_CLIENT_VERSION, value -> microprofileRestClientVersion = value);
         if (!mpRestClientVersions.containsKey(microprofileRestClientVersion)) {
-                throw new IllegalArgumentException(
-                        String.format(Locale.ROOT,
-                                "Version %s of MicroProfile Rest Client is not supported or incorrect. Supported versions are %s",
+            throw new IllegalArgumentException(
+                    String.format(Locale.ROOT,
+                            "Version %s of MicroProfile Rest Client is not supported or incorrect. Supported versions are %s",
                             microprofileRestClientVersion,
-                                String.join(", ", mpRestClientVersions.keySet())
-                        )
-                );
-            }
+                            String.join(", ", mpRestClientVersions.keySet())
+                    )
+            );
+        }
 
         if (!additionalProperties.containsKey("rootJavaEEPackage")) {
             String mpRestClientVersion = (String) additionalProperties.get(MICROPROFILE_REST_CLIENT_VERSION);
@@ -415,7 +417,7 @@ public class JavaClientCodegen extends AbstractJavaCodegen
         convertPropertyToBooleanAndWriteBack(CodegenConstants.WITH_AWSV4_SIGNATURE_COMMENT, this::setWithAWSV4Signature);
         convertPropertyToStringAndWriteBack(GRADLE_PROPERTIES, this::setGradleProperties);
         convertPropertyToStringAndWriteBack(ERROR_OBJECT_TYPE, this::setErrorObjectType);
-        convertPropertyToBooleanAndWriteBack(WEBCLIENT_BLOCKING_OPERATIONS, op -> webclientBlockingOperations=op);
+        convertPropertyToBooleanAndWriteBack(WEBCLIENT_BLOCKING_OPERATIONS, op -> webclientBlockingOperations = op);
         convertPropertyToBooleanAndWriteBack(FAIL_ON_UNKNOWN_PROPERTIES, this::setFailOnUnknownProperties);
 
         // add URL query deepObject support to native, apache-httpclient by default
@@ -726,6 +728,8 @@ public class JavaClientCodegen extends AbstractJavaCodegen
                 additionalProperties.remove(SERIALIZATION_LIBRARY_GSON);
                 additionalProperties.remove(SERIALIZATION_LIBRARY_JSONB);
                 supportingFiles.add(new SupportingFile("RFC3339DateFormat.mustache", invokerFolder, "RFC3339DateFormat.java"));
+                supportingFiles.add(new SupportingFile("RFC3339InstantDeserializer.mustache", invokerFolder, "RFC3339InstantDeserializer.java"));
+                supportingFiles.add(new SupportingFile("RFC3339JavaTimeModule.mustache", invokerFolder, "RFC3339JavaTimeModule.java"));
                 break;
             case SERIALIZATION_LIBRARY_GSON:
                 additionalProperties.put(SERIALIZATION_LIBRARY_GSON, "true");
@@ -742,6 +746,14 @@ public class JavaClientCodegen extends AbstractJavaCodegen
                 additionalProperties.remove(SERIALIZATION_LIBRARY_GSON);
                 additionalProperties.remove(SERIALIZATION_LIBRARY_JSONB);
                 break;
+        }
+        
+        if (isLibrary(FEIGN)) {
+            additionalProperties.put("feign-okhttp", "true");
+        } else if (isLibrary(FEIGN_HC5)) {
+            additionalProperties.put("feign-hc5", "true");
+            setTemplateDir(FEIGN);
+            setLibrary(FEIGN);
         }
 
         // authentication related files
@@ -823,7 +835,7 @@ public class JavaClientCodegen extends AbstractJavaCodegen
         }
 
         // camelize path variables for Feign client
-        if (isLibrary(FEIGN)) {
+        if (isLibrary(FEIGN) || isLibrary(FEIGN_HC5)) {
             OperationMap operations = objs.getOperations();
             List<CodegenOperation> operationList = operations.getOperation();
             Pattern methodPattern = Pattern.compile("^(.*):([^:]*)$");
@@ -1111,7 +1123,7 @@ public class JavaClientCodegen extends AbstractJavaCodegen
                     cm.anyOf.remove("ModelNull");
                 }
             }
-            if (this.parcelableModel) {
+            if (this.parcelableModel && !cm.isEnum) {
                 ((ArrayList<String>) cm.getVendorExtensions().get("x-implements")).add("Parcelable");
             }
         }
