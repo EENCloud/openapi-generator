@@ -2,6 +2,7 @@
 # Managed by EngOps from truths/components.json + repositories.json.
 name: Openapi Generator
 id: ari:cloud:compass:4337fc0d-aa55-4ff9-bd75-ef7117ff9381:component/4c6fdffe-fa4a-46ef-9e6f-a1aa05480c89/ca05eb5e-086e-4577-b58e-712b7e599ca4
+slug: openapi-generator
 configVersion: 1
 typeId: SERVICE
 ownerId: ari:cloud:identity::team/b23f7e67-bf69-456b-866a-cad94ddf7f2c # Authentics - IAM (301)
