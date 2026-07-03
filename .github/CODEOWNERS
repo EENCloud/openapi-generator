@@ -1,3 +1,4 @@
+* @EENCloud/authentics-iam-301
 ## Core team
 modules/openapi-generator/src/main/java/org/openapitools/codegen/*.java @OpenAPITools/generator-core-team
 modules/openapi-generator/src/main/java/org/openapitools/codegen/auth/*.java @OpenAPITools/generator-core-team
